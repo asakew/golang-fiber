@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -18,9 +19,9 @@ func CreateNoteHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"status": "fail", "message": err.Error()})
 	}
 
-	errors := models.ValidateStruct(payload)
-	if errors != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(errors)
+	err := models.ValidateStruct(payload)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
 
 	}
 
@@ -74,7 +75,7 @@ func UpdateNote(c *fiber.Ctx) error {
 	var note models.Note
 	result := initializers.DB.First(&note, "id = ?", noteId)
 	if err := result.Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"status": "fail", "message": "No note with that Id exists"})
 		}
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"status": "fail", "message": err.Error()})
